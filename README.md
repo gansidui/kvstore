@@ -1,10 +1,14 @@
 # kvstore
 
 
-Usage
-===============
+Installation
+---------------
 
 go get github.com/gansidui/kvstore
+
+
+Usage
+---------------
 
 
 ~~~Go
