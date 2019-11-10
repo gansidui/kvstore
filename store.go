@@ -69,7 +69,7 @@ func (this *KVStore) Put(bucket, key, value []byte) error {
 		// use a batch job
 		batch := new(leveldb.Batch)
 		batch.Put(this.getStoreKey(bucket, key), value)
-		batch.Put(this.getCountKey(bucket), []byte(strconv.FormatInt(count, 10)))
+		batch.Put(this.getCountKey(bucket), []byte(strconv.FormatUint(count, 10)))
 
 		return this.db.Write(batch, nil)
 	}
@@ -104,7 +104,7 @@ func (this *KVStore) Delete(bucket, key []byte) error {
 		// use a batch job
 		batch := new(leveldb.Batch)
 		batch.Delete(this.getStoreKey(bucket, key))
-		batch.Put(this.getCountKey(bucket), []byte(strconv.FormatInt(count, 10)))
+		batch.Put(this.getCountKey(bucket), []byte(strconv.FormatUint(count, 10)))
 
 		return this.db.Write(batch, nil)
 	}
@@ -143,7 +143,7 @@ func (this *KVStore) AllKeys(bucket []byte) ([][]byte, error) {
 	return keys, nil
 }
 
-func (this *KVStore) Count(bucket []byte) int64 {
+func (this *KVStore) Count(bucket []byte) uint64 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
@@ -154,13 +154,13 @@ func (this *KVStore) Count(bucket []byte) int64 {
 	return this.count(bucket)
 }
 
-func (this *KVStore) count(bucket []byte) int64 {
+func (this *KVStore) count(bucket []byte) uint64 {
 	data, err := this.db.Get(this.getCountKey(bucket), nil)
 	if err != nil {
 		return 0
 	}
 
-	count, err := strconv.ParseInt(string(data), 10, 64)
+	count, err := strconv.ParseUint(string(data), 10, 64)
 	if err != nil {
 		return 0
 	}
