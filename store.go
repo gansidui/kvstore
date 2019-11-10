@@ -15,6 +15,9 @@ var (
 	// reserved key for count the number of keys in bucket.
 	KeyForCount = []byte("__key_for_count__")
 
+	// reserved key for sequence
+	KeyForSequence = []byte("__key_for_sequence__")
+
 	// errors
 	ErrClosed   = errors.New("kvstore: closed")
 	ErrNotFound = errors.New("kvstore: key not found")
@@ -25,6 +28,7 @@ type KVStore struct {
 	mutex sync.Mutex
 }
 
+// Open the DB file
 func (this *KVStore) Open(path string) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -39,6 +43,7 @@ func (this *KVStore) Open(path string) error {
 	return err
 }
 
+// Close the DB file
 func (this *KVStore) Close() {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -90,6 +95,7 @@ func (this *KVStore) Get(bucket, key []byte) ([]byte, error) {
 	return this.db.Get(this.getStoreKey(bucket, key), nil)
 }
 
+// Delete the key in bucket
 func (this *KVStore) Delete(bucket, key []byte) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -143,6 +149,60 @@ func (this *KVStore) AllKeys(bucket []byte) ([][]byte, error) {
 	return keys, nil
 }
 
+// Sequence returns the current integer for the bucket without incrementing it.
+func (this *KVStore) Sequence(bucket []byte) uint64 {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	if this.db == nil {
+		return 0
+	}
+
+	return this.sequence(bucket)
+}
+
+func (this *KVStore) sequence(bucket []byte) uint64 {
+	data, err := this.db.Get(this.getSequenceKey(bucket), nil)
+	if err != nil {
+		return 0
+	}
+
+	sequence, err := strconv.ParseUint(string(data), 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return sequence
+}
+
+// NextSequence returns an autoincrementing integer for the bucket.
+func (this *KVStore) NextSequence(bucket []byte) (uint64, error) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	if this.db == nil {
+		return 0, ErrClosed
+	}
+
+	sequence := this.sequence(bucket) + 1
+	err := this.db.Put(this.getSequenceKey(bucket), []byte(strconv.FormatUint(sequence, 10)), nil)
+
+	return sequence, err
+}
+
+// SetSequence updates the sequence number for the bucket.
+func (this *KVStore) SetSequence(bucket []byte, sequence uint64) error {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	if this.db == nil {
+		return ErrClosed
+	}
+
+	return this.db.Put(this.getSequenceKey(bucket), []byte(strconv.FormatUint(sequence, 10)), nil)
+}
+
+// Count returns the number of keys in bucket
 func (this *KVStore) Count(bucket []byte) uint64 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -185,4 +245,8 @@ func (this *KVStore) getStoreKey(bucket, key []byte) []byte {
 
 func (this *KVStore) getCountKey(bucket []byte) []byte {
 	return append(bucket, KeyForCount...)
+}
+
+func (this *KVStore) getSequenceKey(bucket []byte) []byte {
+	return append(bucket, KeyForSequence...)
 }

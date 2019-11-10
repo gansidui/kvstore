@@ -2,6 +2,7 @@ package kvstore
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 )
@@ -94,5 +95,44 @@ func Test2(t *testing.T) {
 			t.Fatal()
 		}
 	}
+}
 
+func TestSequence(t *testing.T) {
+	path := "_test.db"
+	db := &KVStore{}
+	db.Open(path)
+	defer db.Close()
+
+	defer os.RemoveAll(path)
+
+	bucket := []byte("bucket_seq")
+	if db.Sequence(bucket) != 0 {
+		t.Fatal()
+	}
+
+	for i := 1; i <= 1000; i++ {
+		if seq, err := db.NextSequence(bucket); seq != uint64(i) || err != nil {
+			t.Fatal()
+		}
+	}
+
+	db.Put(bucket, []byte("key"), []byte("value"))
+	if db.Sequence(bucket) != 1000 {
+		t.Fatal()
+	}
+
+	if err := db.SetSequence(bucket, 2000); err != nil || db.Sequence(bucket) != 2000 {
+		t.Fatal()
+	}
+	if seq, err := db.NextSequence(bucket); seq != 2001 || err != nil {
+		t.Fatal()
+	}
+
+	if db.Sequence([]byte("bucket_bb")) != 0 {
+		t.Fatal()
+	}
+
+	if seq, err := db.NextSequence([]byte("bucket_cc")); seq != 1 || err != nil {
+		t.Fatal()
+	}
 }
