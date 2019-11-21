@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestLevelDB(t *testing.T) {
 	path := "_test.db"
 
-	db := &KVStore{}
+	db := NewLevelDBStore()
 	db.Open(path)
 	defer db.Close()
 
@@ -74,10 +74,10 @@ func Test(t *testing.T) {
 
 }
 
-func Test2(t *testing.T) {
+func TestLevelDB2(t *testing.T) {
 	path := "_test.db"
 
-	db := &KVStore{}
+	db := NewLevelDBStore()
 	db.Open(path)
 	defer db.Close()
 
@@ -97,9 +97,9 @@ func Test2(t *testing.T) {
 	}
 }
 
-func TestSequence(t *testing.T) {
+func TestLevelDBSequence(t *testing.T) {
 	path := "_test.db"
-	db := &KVStore{}
+	db := NewLevelDBStore()
 	db.Open(path)
 	defer db.Close()
 
