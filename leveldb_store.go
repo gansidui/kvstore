@@ -41,7 +41,6 @@ func (this *LevelDBStore) Open(path string) error {
 	return err
 }
 
-// Close the DB file
 func (this *LevelDBStore) Close() {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -54,13 +53,12 @@ func (this *LevelDBStore) Close() {
 	log.Println("LevelDBStore closed")
 }
 
-// It is safe to modify the contents of the arguments after Put returns but not before.
 func (this *LevelDBStore) Put(bucket, key, value []byte) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	if this.db == nil {
-		return ErrClosed
+		return ErrDBClosed
 	}
 
 	if this.exist(bucket, key) {
@@ -80,26 +78,23 @@ func (this *LevelDBStore) Put(bucket, key, value []byte) error {
 	return nil
 }
 
-// The returned slice is its own copy, it is safe to modify the contents
-// of the returned slice.
 func (this *LevelDBStore) Get(bucket, key []byte) ([]byte, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	if this.db == nil {
-		return nil, ErrClosed
+		return nil, ErrDBClosed
 	}
 
 	return this.db.Get(this.getStoreKey(bucket, key), nil)
 }
 
-// Delete the key in bucket
 func (this *LevelDBStore) Delete(bucket, key []byte) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	if this.db == nil {
-		return ErrClosed
+		return ErrDBClosed
 	}
 
 	if this.exist(bucket, key) {
@@ -113,17 +108,15 @@ func (this *LevelDBStore) Delete(bucket, key []byte) error {
 		return this.db.Write(batch, nil)
 	}
 
-	return ErrNotFound
+	return ErrKeyNotFound
 }
 
-// The returned slice is its own copy, it is safe to modify the contents
-// of the returned slice.
 func (this *LevelDBStore) AllKeys(bucket []byte) ([][]byte, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	if this.db == nil {
-		return nil, ErrClosed
+		return nil, ErrDBClosed
 	}
 
 	keys := make([][]byte, 0)
@@ -147,7 +140,6 @@ func (this *LevelDBStore) AllKeys(bucket []byte) ([][]byte, error) {
 	return keys, nil
 }
 
-// Sequence returns the current integer for the bucket without incrementing it.
 func (this *LevelDBStore) Sequence(bucket []byte) uint64 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -173,13 +165,12 @@ func (this *LevelDBStore) sequence(bucket []byte) uint64 {
 	return sequence
 }
 
-// NextSequence returns an autoincrementing integer for the bucket.
 func (this *LevelDBStore) NextSequence(bucket []byte) (uint64, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	if this.db == nil {
-		return 0, ErrClosed
+		return 0, ErrDBClosed
 	}
 
 	sequence := this.sequence(bucket) + 1
@@ -188,19 +179,17 @@ func (this *LevelDBStore) NextSequence(bucket []byte) (uint64, error) {
 	return sequence, err
 }
 
-// SetSequence updates the sequence number for the bucket.
 func (this *LevelDBStore) SetSequence(bucket []byte, sequence uint64) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
 	if this.db == nil {
-		return ErrClosed
+		return ErrDBClosed
 	}
 
 	return this.db.Put(this.getSequenceKey(bucket), []byte(strconv.FormatUint(sequence, 10)), nil)
 }
 
-// Count returns the number of keys in bucket
 func (this *LevelDBStore) Count(bucket []byte) uint64 {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()

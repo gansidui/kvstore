@@ -40,6 +40,7 @@ type KVStore interface {
 }
 
 var (
-	ErrClosed   = errors.New("kvstore: closed")
-	ErrNotFound = errors.New("kvstore: key not found")
+	ErrDBClosed       = errors.New("kvstore: db closed")
+	ErrKeyNotFound    = errors.New("kvstore: key not found")
+	ErrBucketNotFound = errors.New("kvstore: bucket not found")
 )
