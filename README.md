@@ -19,7 +19,8 @@ import (
 )
 
 func main() {
-	db := &kvstore.KVStore{}
+	db := kvstore.NewBoltDBStore()
+	// db := kvstore.NewLevelDBStore()
 
 	// open
 	err := db.Open("test.db")
