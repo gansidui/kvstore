@@ -119,13 +119,16 @@ func (this *LevelDBStore) AllKeys(bucket []byte) ([][]byte, error) {
 		return nil, ErrDBClosed
 	}
 
-	keys := make([][]byte, 0)
+	// exclude keys
 	countKey := this.getCountKey(bucket)
+	sequenceKey := this.getSequenceKey(bucket)
+
+	keys := make([][]byte, 0)
 	prefix := append(bucket, "_"...) // storeKey = bucket_key
 
 	iter := this.db.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
-		if bytes.Equal(iter.Key(), countKey) {
+		if bytes.Equal(iter.Key(), countKey) || bytes.Equal(iter.Key(), sequenceKey) {
 			continue
 		}
 

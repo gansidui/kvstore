@@ -19,7 +19,15 @@ func TestLevelDB(t *testing.T) {
 	db.Put(bucket, []byte("key2"), []byte("value2"))
 	db.Put(bucket, []byte("key3"), []byte("value3"))
 
+	if nextSeq, err := db.NextSequence(bucket); nextSeq != 1 || err != nil {
+		t.Fatal()
+	}
+
 	keys, _ := db.AllKeys(bucket)
+	if len(keys) != 3 {
+		t.Fatal()
+	}
+
 	for _, key := range keys {
 		value, err := db.Get(bucket, key)
 		if err == nil {
