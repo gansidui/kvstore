@@ -20,7 +20,7 @@ var (
 
 type LevelDBStore struct {
 	db    *leveldb.DB
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 func NewLevelDBStore() KVStore {
@@ -79,8 +79,8 @@ func (this *LevelDBStore) Put(bucket, key, value []byte) error {
 }
 
 func (this *LevelDBStore) Get(bucket, key []byte) ([]byte, error) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return nil, ErrDBClosed
@@ -112,8 +112,8 @@ func (this *LevelDBStore) Delete(bucket, key []byte) error {
 }
 
 func (this *LevelDBStore) AllKeys(bucket []byte) ([][]byte, error) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return nil, ErrDBClosed
@@ -144,8 +144,8 @@ func (this *LevelDBStore) AllKeys(bucket []byte) ([][]byte, error) {
 }
 
 func (this *LevelDBStore) Sequence(bucket []byte) uint64 {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return 0
@@ -194,8 +194,8 @@ func (this *LevelDBStore) SetSequence(bucket []byte, sequence uint64) error {
 }
 
 func (this *LevelDBStore) Count(bucket []byte) uint64 {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return 0

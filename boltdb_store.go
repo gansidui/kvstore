@@ -10,7 +10,7 @@ import (
 
 type BoltDBStore struct {
 	db    *bolt.DB
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 func NewBoltDBStore() KVStore {
@@ -64,8 +64,8 @@ func (this *BoltDBStore) Put(bucket, key, value []byte) error {
 }
 
 func (this *BoltDBStore) Get(bucket, key []byte) ([]byte, error) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return nil, ErrDBClosed
@@ -110,8 +110,8 @@ func (this *BoltDBStore) Delete(bucket, key []byte) error {
 }
 
 func (this *BoltDBStore) AllKeys(bucket []byte) ([][]byte, error) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return nil, ErrDBClosed
@@ -140,23 +140,23 @@ func (this *BoltDBStore) AllKeys(bucket []byte) ([][]byte, error) {
 }
 
 func (this *BoltDBStore) Sequence(bucket []byte) uint64 {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return 0
 	}
 
-	var seq uint64 = 0
+	var sequence uint64 = 0
 	this.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		if b != nil {
-			seq = b.Sequence()
+			sequence = b.Sequence()
 		}
 		return nil
 	})
 
-	return seq
+	return sequence
 }
 
 func (this *BoltDBStore) NextSequence(bucket []byte) (uint64, error) {
@@ -167,27 +167,23 @@ func (this *BoltDBStore) NextSequence(bucket []byte) (uint64, error) {
 		return 0, ErrDBClosed
 	}
 
-	var seq uint64
+	var sequence uint64
 	err := this.db.Update(func(tx *bolt.Tx) error {
+		var err error
 		b := tx.Bucket(bucket)
 		if b == nil {
-			var err error
 			if b, err = tx.CreateBucket(bucket); err != nil {
 				return err
 			}
 		}
-
-		seq2, err := b.NextSequence()
-		if err == nil {
-			seq = seq2
-		}
+		sequence, err = b.NextSequence()
 		return err
 	})
 
 	if err != nil {
 		return 0, err
 	}
-	return seq, nil
+	return sequence, nil
 }
 
 func (this *BoltDBStore) SetSequence(bucket []byte, sequence uint64) error {
@@ -208,8 +204,8 @@ func (this *BoltDBStore) SetSequence(bucket []byte, sequence uint64) error {
 }
 
 func (this *BoltDBStore) Count(bucket []byte) uint64 {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
 
 	if this.db == nil {
 		return 0
